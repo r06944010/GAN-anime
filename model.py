@@ -61,7 +61,5 @@ def build_critic(_t) :
     ]
 
     for block in c_spec :
-        # print('block:',block)
-        # print('_t',_t)
         _t = block(_t)
     return _t

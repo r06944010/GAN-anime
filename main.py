@@ -67,9 +67,9 @@ with tf.variable_scope('c_b') as scope:
 c_vars = [v for v in tf.trainable_variables() if v.name.startswith('c_')]
 g_vars = [v for v in tf.trainable_variables() if v.name.startswith('gen_')]
 
-#for v in c_vars : print v
+#for v in c_vars : print (v)
 #print('----------------------')
-#for v in g_vars : print v
+#for v in g_vars : print (v)
 
 ##################################
 # Define Loss
@@ -92,6 +92,7 @@ GP_b = tf.reduce_mean(
 GP = GP_a + GP_b
 
 loss_c = -1.0*W + LAMBDA*GP
+
 with tf.variable_scope('c_train') :
     gvs = c_optimizer.compute_gradients(loss_c,var_list=c_vars)
     train_c_op = c_optimizer.apply_gradients(gvs)
@@ -113,12 +114,12 @@ with tf.variable_scope('g_train') :
 #################################
 # Miscellaneous(summary, init, etc.)
 #################################
-tf.summary.image('real_a',tf.transpose(a,perm=[0,2,3,1]),max_outputs=10)
-tf.summary.image('fake_a',tf.transpose(a_gen,perm=[0,2,3,1]),max_outputs=10)
-tf.summary.image('identity_a',tf.transpose(a_identity,perm=[0,2,3,1]),max_outputs=10)
-tf.summary.image('real_b',tf.transpose(b,perm=[0,2,3,1]),max_outputs=10)
-tf.summary.image('fake_b',tf.transpose(b_gen,perm=[0,2,3,1]),max_outputs=10)
-tf.summary.image('identity_b',tf.transpose(b_identity,perm=[0,2,3,1]),max_outputs=10)
+tf.summary.image('real_a',a,max_outputs=10)
+tf.summary.image('fake_a',a_gen,max_outputs=10)
+tf.summary.image('identity_a',a_identity,max_outputs=10)
+tf.summary.image('real_b',b,max_outputs=10)
+tf.summary.image('fake_b',b_gen,max_outputs=10)
+tf.summary.image('identity_b',b_identity,max_outputs=10)
 
 tf.summary.scalar('Estimated W',W)
 tf.summary.scalar('gradient_penalty',GP)
@@ -129,7 +130,8 @@ tf.summary.scalar('loss_cycle', loss_cycle)
 summary_op = tf.summary.merge_all()
 
 # Init operation
-init_op = tf.global_variables_initializer()
+# init_op = tf.global_variables_initializer()
+init = (tf.global_variables_initializer(), tf.local_variables_initializer())
 
 #################################
 # Train! (summary, init, etc.)
@@ -140,7 +142,7 @@ saver = tf.train.Saver(max_to_keep = 5)
 
 # Queue ,Threads and Summary Writer
 sess = tf.Session()
-sess.run([init_op])
+sess.run(init)
 
 # if model exist, restore
 """
@@ -148,14 +150,16 @@ sess.run([init_op])
 #    saver.restore(sess,"path_to_model")
 """
 
+# from tensorflow.python import debug as tf_debug
+
 try:
+    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
     summary_writer = tf.summary.FileWriter(LOG_DIR,sess.graph)
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(sess=sess,coord=coord)
     for step in range(MAX_ITERATION+1) :
         if coord.should_stop() :
             break
-
         for _ in range(NUM_CRITIC_TRAIN) :
             _ = sess.run(train_c_op)
         W_eval, GP_eval, loss_g_eval, loss_cycle_eval, _ = sess.run([W,GP,loss_g,loss_cycle,train_g_op])
@@ -173,5 +177,4 @@ except Exception as e:
 finally :
     coord.request_stop()
     coord.join(threads)
-
     sess.close()
