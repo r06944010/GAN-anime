@@ -13,8 +13,8 @@ TARGET = 'horse2zebra'
 
 LOG_DIR = './log/'+TARGET
 
-A_DIR = './datasets/'+TARGET+'/trainA/*'
-B_DIR = './datasets/'+TARGET+'/trainB/*'
+A_DIR = 'datasets/'+TARGET+'/trainA/*'
+B_DIR = 'datasets/'+TARGET+'/trainB/*'
 
 LEARNING_RATE = 0.0001
 BETA_1 = 0.5
@@ -36,7 +36,6 @@ NUM_CRITIC_TRAIN = 4
 #############################################3
 _, a = dataset.get_image_batch(A_DIR,BATCH_SIZE,300,256)
 _, b = dataset.get_image_batch(B_DIR,BATCH_SIZE,300,256)
-
 
 with tf.variable_scope('gen_a_to_b') as a_to_b_scope :
     b_gen = build_enc_dec(a)
